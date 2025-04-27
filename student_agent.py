@@ -5,44 +5,12 @@ import random
 from collections import deque
 import os
 import cv2
-
+from ddqn import DuelingDQN
 # Set device
 device = torch.device("cpu")  # For leaderboard submission
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class DQN(nn.Module):
-    def __init__(self, input_shape, n_actions):
-        super(DQN, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.ReLU()
-        )
-        
-        # Calculate the correct output size from convolutional layers
-        conv_out_size = self._get_conv_out(input_shape)
-        
-        self.fc = nn.Sequential(
-            nn.Linear(conv_out_size, 512),
-            nn.ReLU(),
-            nn.Linear(512, n_actions)
-        )
-    
-    def _get_conv_out(self, shape):
-        # Pass a dummy tensor through conv layers to get output shape
-        o = self.conv(torch.zeros(1, *shape))
-        return int(np.prod(o.size()))
-    
-    def forward(self, x):
-        # Make sure the input has the right shape
-        if len(x.size()) == 3:
-            x = x.unsqueeze(0)  # Add batch dimension if missing
-            
-        conv_out = self.conv(x).view(x.size()[0], -1)
-        return self.fc(conv_out)
+
 
 class Agent:
     def __init__(self):
@@ -56,7 +24,7 @@ class Agent:
         self.n_actions = 12
         
         # Initialize DQN networks
-        self.policy_net = DQN(self.input_shape, self.n_actions).to(device)
+        self.policy_net = DuelingDQN(self.input_shape, self.n_actions).to(device)
         
         # Load pre-trained model if available
         model_path = 'mario_model.pth'
